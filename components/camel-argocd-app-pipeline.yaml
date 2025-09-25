@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sanity-camel-pipeline
+  namespace: openshift-gitops
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    system: sanity
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/contract-first-idp-qa/developer-charts
+    targetRevision: HEAD
+    path: quarkus-pipeline
+    helm:
+      values: |
+        domain: contract-first-idp-qa
+        system: sanity
+        component: camel
+        deployment: jvm
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sanity-build
+  syncPolicy:
+    automated: 
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=false
+    - RespectIgnoreDifferences=true
+    - ApplyOutOfSyncOnly=true
+    retry:
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 10m
