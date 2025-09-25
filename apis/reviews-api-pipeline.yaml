@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sanity-reviews-api-pipeline
+  namespace: openshift-gitops
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    system: sanity
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/contract-first-idp-qa/developer-charts
+    targetRevision: HEAD
+    path: api-specification-pipeline
+    helm:
+      values: |
+        domain: contract-first-idp-qa
+        system: sanity
+        component: reviews
+        groupid: com.redhat.demo.sanity
+        apicurioRegistry: registry-apicurio-registry.apps.cluster-kkbn7.dynamic.redhatworkshops.io
+        mockRegistry: microcks-microcks.apps.cluster-kkbn7.dynamic.redhatworkshops.io
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sanity-build
+  syncPolicy:
+    automated: 
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=false
+    - RespectIgnoreDifferences=true
+    - ApplyOutOfSyncOnly=true
+    retry:
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 10m
